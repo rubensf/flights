@@ -12,7 +12,6 @@ console.log('Reading RapidApi Key...');
 const key = fs.readFileSync(rapidKeyPath, 'utf8').trim();
 
 console.log('Reading Airport Data...');
-const entryPoints = 14;
 const airportDataBlob = fs.readFileSync('airports.csv', 'utf8').trim();
 var airportDataLined = airportDataBlob.split(/\r?\n/);
 var airportData = {};
@@ -61,9 +60,7 @@ app.get('/:dep/:arr/:date', (req, res) => {
     var loc = arglist[arglist.length-1];
     console.log('Id: ' + loc);
 
-    unirest.get('https://skyscanner-skyscanner-flight-search-v1.p.rapidapi.com/apiservices/pricing/uk2/v1.0/' + loc)
-    .header('X-RapidAPI-Key', key)
-    .end(function (result) {
+    var finalizedLoadingFunction = (result) => {
       res.writeHead(200);
 
       var idMapper = (map, obj) => {
@@ -76,12 +73,16 @@ app.get('/:dep/:arr/:date', (req, res) => {
       var segments    = result.body.Segments.reduce(idMapper, {});
       var legs        = result.body.Legs.reduce(idMapper, {});
       // Not ID-ed.
-      var itineraries = result.body.Itineraries.sort((a,b) => a.PricingOptions[0].Price - b.PricingOptions[0].constructorPrice);
+      var itineraries = result.body.Itineraries.sort((a,b) => a.PricingOptions[0].Price - b.PricingOptions[0].Price);
 
       for (var itid in itineraries) {
         var itinerary = itineraries[itid];
-        res.write('<a href=' + itinerary.PricingOptions[0].DeeplinkUrl + '>Flight option #' + itid + ' ($' + itinerary.PricingOptions[0].Price + ')</a><br />');
+        res.write('<a href=' + itinerary.PricingOptions[0].DeeplinkUrl + '>Flight option #' + itid + ' ($' + itinerary.PricingOptions[0].Price + ')</a>')
         var itlegs = legs[itinerary.OutboundLegId];
+        if (itlegs.SegmentIds.length == 1) {
+          res.write(' <b>NONSTOP!!!</b>');
+        }
+        res.write('<br />');
         for (var segid in itlegs.SegmentIds) {
           var segment = segments[itlegs.SegmentIds[segid]];
 
@@ -92,25 +93,31 @@ app.get('/:dep/:arr/:date', (req, res) => {
           var depAirportInfo = airportData[depAirport.Code];
           var destAirportInfo = airportData[destAirport.Code];
 
+          var airportsDistance = haversine([depAirportInfo.Latitude, depAirportInfo.Longitude],
+                                           [destAirportInfo.Latitude, destAirportInfo.Longitude],
+                                           {unit: 'mile', format: '[lat,lon]'}).toFixed(2);
+
           res.write('Flight ' + carrier.Code + segment.FlightNumber +
                     ' From ' + depAirport.Code +
                     ' To ' + destAirport.Code +
                     ' Departs At ' + segment.DepartureDateTime +
                     ' Arrives At ' + segment.ArrivalDateTime +
-                    ' Distance ' + haversine([depAirportInfo.Latitude, depAirportInfo.Longitude],
-                                             [destAirportInfo.Latitude, destAirportInfo.Longitude],
-                                             {unit: 'mile', format: '[lat,lon]'}).toFixed(2) + ' miles' +
+                    ' Distance ' + airportsDistance + ' miles' +
                     '<br />');
         }
       }
 
       res.end();
-    });
+    };
+
+
+    unirest.get('https://skyscanner-skyscanner-flight-search-v1.p.rapidapi.com/apiservices/pricing/uk2/v1.0/' + loc)
+      .header('X-RapidAPI-Key', key)
+      .end(finalizedLoadingFunction);
   });
 }).listen(port);
 
 console.log('Started Server...')
-
 
 
 /// Places:
@@ -154,7 +161,7 @@ console.log('Started Server...')
   // OperatingCarriers: [ 870 ],
   // Directionality: 'Outbound',
   // FlightNumbers: [ { FlightNumber: '1186', CarrierId: 870 } ] }
-//
+
 /// Itineraries:
 // { OutboundLegId: '15821-1905100700--32593-1-12712-1905102355',
   // PricingOptions:
