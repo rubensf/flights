@@ -2,16 +2,48 @@ const express = require('express');
 const url = require('url');
 const unirest = require('unirest');
 const fs = require('fs');
+const haversine = require('haversine');
 
 const rapidKeyPath = '/var/flights/key';
 const host = '0.0.0.0';
 const port = 8080;
 
 console.log('Reading RapidApi Key...');
-
 const key = fs.readFileSync(rapidKeyPath, 'utf8').trim();
 
-const app = express();
+console.log('Reading Airport Data...');
+const entryPoints = 14;
+const airportDataBlob = fs.readFileSync('airports.csv', 'utf8').trim();
+var airportDataLined = airportDataBlob.split(/\r?\n/);
+var airportData = {};
+
+for (var lineId in airportDataLined) {
+  const airportDataLine = airportDataLined[lineId];
+  var airportDataItems = airportDataLine.split(',');
+
+  // We don't need airports without IATA, we rarely can buy tickets for those.
+  if (airportDataItems[4] !== '\\N') {
+    const iata = airportDataItems[4].replace(/"/g, '');
+    airportData[iata] = {
+      'Id'       : airportDataItems[0].replace(/"/g, ''),
+      'Name'     : airportDataItems[1].replace(/"/g, ''),
+      'City'     : airportDataItems[2].replace(/"/g, ''),
+      'Country'  : airportDataItems[3].replace(/"/g, ''),
+      'IATA'     : airportDataItems[4].replace(/"/g, ''),
+      'ICAO'     : airportDataItems[5].replace(/"/g, ''),
+      'Latitude' : airportDataItems[6].replace(/"/g, ''),
+      'Longitude': airportDataItems[7].replace(/"/g, ''),
+      'Altitude' : airportDataItems[8].replace(/"/g, ''),
+      'Timezone' : airportDataItems[9].replace(/"/g, ''),
+      'DST'      : airportDataItems[10].replace(/"/g, ''),
+      'Tz'       : airportDataItems[11].replace(/"/g, ''),
+      'Type'     : airportDataItems[12].replace(/"/g, ''),
+      'Source'   : airportDataItems[13].replace(/"/g, ''),
+    };
+  }
+}
+
+var app = express();
 
 app.get('/:dep/:arr/:date', (req, res) => {
   unirest.post('https://skyscanner-skyscanner-flight-search-v1.p.rapidapi.com/apiservices/pricing/v1.0')
@@ -20,9 +52,9 @@ app.get('/:dep/:arr/:date', (req, res) => {
   .send('country=US')
   .send('currency=USD')
   .send('locale=en-US')
-  .send('originPlace='+req.params['dep']+'-sky')
+  .send('originPlace='     +req.params['dep']+'-sky')
   .send('destinationPlace='+req.params['arr']+'-sky')
-  .send('outboundDate='+req.params['date'])
+  .send('outboundDate='    +req.params['date'])
   .send('adults=1')
   .end(function (result) {
     var arglist = result.headers['location'].split('/')
@@ -52,11 +84,22 @@ app.get('/:dep/:arr/:date', (req, res) => {
         var itlegs = legs[itinerary.OutboundLegId];
         for (var segid in itlegs.SegmentIds) {
           var segment = segments[itlegs.SegmentIds[segid]];
-          res.write('Flight ' + carriers[segment.Carrier].Code + segment.FlightNumber +
-                    ' From ' + places[segment.OriginStation].Code +
-                    ' To ' + places[segment.DestinationStation].Code +
+
+          var carrier = carriers[segment.Carrier];
+          var depAirport = places[segment.OriginStation];
+          var destAirport = places[segment.DestinationStation];
+
+          var depAirportInfo = airportData[depAirport.Code];
+          var destAirportInfo = airportData[destAirport.Code];
+
+          res.write('Flight ' + carrier.Code + segment.FlightNumber +
+                    ' From ' + depAirport.Code +
+                    ' To ' + destAirport.Code +
                     ' Departs At ' + segment.DepartureDateTime +
                     ' Arrives At ' + segment.ArrivalDateTime +
+                    ' Distance ' + haversine([depAirportInfo.Latitude, depAirportInfo.Longitude],
+                                             [destAirportInfo.Latitude, destAirportInfo.Longitude],
+                                             {unit: 'mile', format: '[lat,lon]'}).toFixed(2) + ' miles' +
                     '<br />');
         }
       }
@@ -64,7 +107,7 @@ app.get('/:dep/:arr/:date', (req, res) => {
       res.end();
     });
   });
-}).listen(8080);
+}).listen(port);
 
 console.log('Started Server...')
 
