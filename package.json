@@ -1,0 +1,15 @@
+{
+  "name": "flight_searches",
+  "version": "0.0.1",
+  "description": "Sample Flight Search Attempt",
+  "author": "Rubens Farias <rubens.farias@duke.edu>",
+  "main": "server.js",
+  "license": "MIT",
+  "scripts": {
+    "start": "node server.js"
+  },
+  "dependencies": {
+    "express": "^4.16.1",
+    "unirest": "^0.6.0"
+  }
+}
