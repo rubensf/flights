@@ -16,6 +16,75 @@ const airportDataBlob = fs.readFileSync('airports.csv', 'utf8').trim();
 var airportDataLined = airportDataBlob.split(/\r?\n/);
 var airportData = {};
 
+function sleep(ms) {
+  return new Promise(resolve => setTimeout(resolve, ms));
+}
+
+function finalizedLoadingFunction(callbackRes, result) {
+  callbackRes.writeHead(200);
+
+  var idMapper = (map, obj) => {
+    map[obj.Id] = obj;
+    return map;
+  };
+
+  var places      = result.body.Places.reduce(idMapper, {});
+  var carriers    = result.body.Carriers.reduce(idMapper, {});
+  var segments    = result.body.Segments.reduce(idMapper, {});
+  var legs        = result.body.Legs.reduce(idMapper, {});
+  // Not ID-ed.
+  var itineraries = result.body.Itineraries.sort((a,b) => a.PricingOptions[0].Price - b.PricingOptions[0].Price);
+
+  for (var itid in itineraries) {
+    var itinerary = itineraries[itid];
+    callbackRes.write('<a href=' + itinerary.PricingOptions[0].DeeplinkUrl + '>Flight option #' + itid + ' ($' + itinerary.PricingOptions[0].Price + ')</a>')
+    var itlegs = legs[itinerary.OutboundLegId];
+    if (itlegs.SegmentIds.length == 1) {
+      callbackRes.write(' <b>NONSTOP!!!</b>');
+    }
+    callbackRes.write('<br />');
+    for (var segid in itlegs.SegmentIds) {
+      var segment = segments[itlegs.SegmentIds[segid]];
+
+      var carrier = carriers[segment.Carrier];
+      var depAirport = places[segment.OriginStation];
+      var destAirport = places[segment.DestinationStation];
+
+      var depAirportInfo = airportData[depAirport.Code];
+      var destAirportInfo = airportData[destAirport.Code];
+
+      var airportsDistance = haversine([depAirportInfo.Latitude, depAirportInfo.Longitude],
+        [destAirportInfo.Latitude, destAirportInfo.Longitude],
+        {unit: 'mile', format: '[lat,lon]'}).toFixed(2);
+
+      callbackRes.write('Flight ' + carrier.Code + segment.FlightNumber +
+        ' From ' + depAirport.Code +
+        ' To ' + destAirport.Code +
+        ' Departs At ' + segment.DepartureDateTime +
+        ' Arrives At ' + segment.ArrivalDateTime +
+        ' Distance ' + airportsDistance + ' miles' +
+        '<br />');
+    }
+  }
+
+  callbackRes.end();
+};
+
+function keepTrying(callbackRes, loc) {
+  unirest.get('https://skyscanner-skyscanner-flight-search-v1.p.rapidapi.com/apiservices/pricing/uk2/v1.0/' + loc)
+    .header('X-RapidAPI-Key', key)
+    .end(async (res) => {
+      if (res.body.Status === 'UpdatesPending') {
+        console.log('Loading...');
+        await sleep(500);
+        keepTrying(callbackRes, loc);
+      } else {
+        console.log('Not Pending -> ' + res.body.Status);
+        finalizedLoadingFunction(callbackRes, res);
+      }
+    });
+}
+
 for (var lineId in airportDataLined) {
   const airportDataLine = airportDataLined[lineId];
   var airportDataItems = airportDataLine.split(',');
@@ -60,60 +129,7 @@ app.get('/:dep/:arr/:date', (req, res) => {
     var loc = arglist[arglist.length-1];
     console.log('Id: ' + loc);
 
-    var finalizedLoadingFunction = (result) => {
-      res.writeHead(200);
-
-      var idMapper = (map, obj) => {
-        map[obj.Id] = obj;
-        return map;
-      };
-
-      var places      = result.body.Places.reduce(idMapper, {});
-      var carriers    = result.body.Carriers.reduce(idMapper, {});
-      var segments    = result.body.Segments.reduce(idMapper, {});
-      var legs        = result.body.Legs.reduce(idMapper, {});
-      // Not ID-ed.
-      var itineraries = result.body.Itineraries.sort((a,b) => a.PricingOptions[0].Price - b.PricingOptions[0].Price);
-
-      for (var itid in itineraries) {
-        var itinerary = itineraries[itid];
-        res.write('<a href=' + itinerary.PricingOptions[0].DeeplinkUrl + '>Flight option #' + itid + ' ($' + itinerary.PricingOptions[0].Price + ')</a>')
-        var itlegs = legs[itinerary.OutboundLegId];
-        if (itlegs.SegmentIds.length == 1) {
-          res.write(' <b>NONSTOP!!!</b>');
-        }
-        res.write('<br />');
-        for (var segid in itlegs.SegmentIds) {
-          var segment = segments[itlegs.SegmentIds[segid]];
-
-          var carrier = carriers[segment.Carrier];
-          var depAirport = places[segment.OriginStation];
-          var destAirport = places[segment.DestinationStation];
-
-          var depAirportInfo = airportData[depAirport.Code];
-          var destAirportInfo = airportData[destAirport.Code];
-
-          var airportsDistance = haversine([depAirportInfo.Latitude, depAirportInfo.Longitude],
-                                           [destAirportInfo.Latitude, destAirportInfo.Longitude],
-                                           {unit: 'mile', format: '[lat,lon]'}).toFixed(2);
-
-          res.write('Flight ' + carrier.Code + segment.FlightNumber +
-                    ' From ' + depAirport.Code +
-                    ' To ' + destAirport.Code +
-                    ' Departs At ' + segment.DepartureDateTime +
-                    ' Arrives At ' + segment.ArrivalDateTime +
-                    ' Distance ' + airportsDistance + ' miles' +
-                    '<br />');
-        }
-      }
-
-      res.end();
-    };
-
-
-    unirest.get('https://skyscanner-skyscanner-flight-search-v1.p.rapidapi.com/apiservices/pricing/uk2/v1.0/' + loc)
-      .header('X-RapidAPI-Key', key)
-      .end(finalizedLoadingFunction);
+    keepTrying(res, loc);
   });
 }).listen(port);
 
