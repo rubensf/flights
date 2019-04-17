@@ -60,6 +60,7 @@ function finalizedLoadingFunction(callbackRes, result) {
 
       newIt.Flights.push({
         Carrier: carrier.Code,
+        Image: carrier.ImageUrl,
         Number: segment.FlightNumber,
         From: depAirport.Code,
         To: destAirport.Code,
@@ -122,6 +123,8 @@ var app = express();
 
 app.use(morgan('combined'));
 app.use(express.static(__dirname + '/web'));
+
+app.get('/test', (req, res) => res.sendFile(__dirname + '/test/sample.js'))
 
 app.get('/:dep/:arr/:date', (req, res) => {
   unirest.post('https://skyscanner-skyscanner-flight-search-v1.p.rapidapi.com/apiservices/pricing/v1.0')
