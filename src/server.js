@@ -1,6 +1,7 @@
 const express = require('express');
 const url = require('url');
 const unirest = require('unirest');
+const morgan = require('morgan');
 const fs = require('fs');
 const haversine = require('haversine');
 
@@ -21,8 +22,6 @@ function sleep(ms) {
 }
 
 function finalizedLoadingFunction(callbackRes, result) {
-  callbackRes.writeHead(200);
-
   var idMapper = (map, obj) => {
     map[obj.Id] = obj;
     return map;
@@ -35,14 +34,16 @@ function finalizedLoadingFunction(callbackRes, result) {
   // Not ID-ed.
   var itineraries = result.body.Itineraries.sort((a,b) => a.PricingOptions[0].Price - b.PricingOptions[0].Price);
 
+  var simplifiedIts = [];
+
   for (var itid in itineraries) {
     var itinerary = itineraries[itid];
-    callbackRes.write('<a href=' + itinerary.PricingOptions[0].DeeplinkUrl + '>Flight option #' + itid + ' ($' + itinerary.PricingOptions[0].Price + ')</a>')
-    var itlegs = legs[itinerary.OutboundLegId];
-    if (itlegs.SegmentIds.length == 1) {
-      callbackRes.write(' <b>NONSTOP!!!</b>');
+    var newIt = {
+      Link: itinerary.PricingOptions[0].DeeplinkUrl,
+      Price: itinerary.PricingOptions[0].Price,
+      Flights: [],
     }
-    callbackRes.write('<br />');
+    var itlegs = legs[itinerary.OutboundLegId];
     for (var segid in itlegs.SegmentIds) {
       var segment = segments[itlegs.SegmentIds[segid]];
 
@@ -57,16 +58,22 @@ function finalizedLoadingFunction(callbackRes, result) {
         [destAirportInfo.Latitude, destAirportInfo.Longitude],
         {unit: 'mile', format: '[lat,lon]'}).toFixed(2);
 
-      callbackRes.write('Flight ' + carrier.Code + segment.FlightNumber +
-        ' From ' + depAirport.Code +
-        ' To ' + destAirport.Code +
-        ' Departs At ' + segment.DepartureDateTime +
-        ' Arrives At ' + segment.ArrivalDateTime +
-        ' Distance ' + airportsDistance + ' miles' +
-        '<br />');
+      newIt.Flights.push({
+        Carrier: carrier.Code,
+        Number: segment.FlightNumber,
+        From: depAirport.Code,
+        To: destAirport.Code,
+        Departs: segment.DepartureDateTime,
+        Arrives: segment.ArrivalDateTime,
+        Distance: airportsDistance,
+      });
     }
+    simplifiedIts.push(newIt);
   }
 
+  callbackRes.setHeader('Content-Type', 'application/json');
+  callbackRes.json(simplifiedIts);
+  callbackRes.status(200);
   callbackRes.end();
 };
 
@@ -113,6 +120,9 @@ for (var lineId in airportDataLined) {
 
 var app = express();
 
+app.use(morgan('combined'));
+app.use(express.static(__dirname + '/web'));
+
 app.get('/:dep/:arr/:date', (req, res) => {
   unirest.post('https://skyscanner-skyscanner-flight-search-v1.p.rapidapi.com/apiservices/pricing/v1.0')
   .header('X-RapidAPI-Key', key)
@@ -129,9 +139,11 @@ app.get('/:dep/:arr/:date', (req, res) => {
     var loc = arglist[arglist.length-1];
     console.log('Id: ' + loc);
 
-    keepTrying(res, loc);
+    // keepTrying(res, loc);
   });
-}).listen(port);
+});
+
+app.listen(port);
 
 console.log('Started Server...')
 
