@@ -1,4 +1,9 @@
 function reveal() {
+  var dep = document.getElementById("departure").value;
+  var arr = document.getElementById("arrival").value;
+  var outbound = document.getElementById("outbound").value;
+  var inbound = document.getElementById("inbound").value;
+
   var lddiv = document.getElementById('loading');
   if (lddiv !== undefined && lddiv !== null) {
     lddiv.parentNode.removeChild(lddiv);
@@ -14,7 +19,7 @@ function reveal() {
   loading.innerHTML = '<p>Loading...</p>';
   document.getElementById('content').appendChild(loading);
 
-  fetch('http://localhost:8080/test')
+  fetch('http://52.91.80.138/' + dep + '/' + arr + '/' + outbound)
   .then((resp) => resp.json())
   .then((data) => {
     var div = document.createElement('div');
@@ -23,7 +28,7 @@ function reveal() {
     div.innerHTML = '';
 
     for (var itid in data) {
-      div.innerHTML += '<a href=' + data[itid].Link + '>Flight option #' + 0 + ' ($' + data[itid].Price + ')</a><br />';
+      div.innerHTML += '<a href=' + data[itid].Link + '>Flight option #' + 0 + ' ($' + data[itid].Price + ')</a>. Costs ' + data[itid].Mileages[0].Cost + 'k ' + data[itid].Mileages[0].Carrier + ' miles. <br />';
       for (var flid in data[itid].Flights) {
         var flight = data[itid].Flights[flid];
         div.innerHTML +=
@@ -32,7 +37,7 @@ function reveal() {
           ' To ' + flight.To +
           ' Departs At ' + flight.Departs +
           ' Arrives At ' + flight.Arrives +
-          ' Distance ' + flight.Distance + ' miles' +
+          ' Distance ' + flight.Distance + ' miles ' +
           '<br />';
       }
     }

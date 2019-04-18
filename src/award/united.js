@@ -1,4 +1,4 @@
-var regions = {
+var regionIds = {
   "Mainland U.S.: Alaska & Canada": 0,
   "Hawaii": 1,
   "Mexico": 2,
@@ -18,9 +18,9 @@ var regions = {
   "Australia & New Zealand": 16
 };
 
-var countries = {
+var regions = {
   "Afghanistan": "Central Asia",
-  "Alaska": "Mainland U.S., Alaska & Canada", // Part of USA
+  "Alaska": "Mainland U.S.: Alaska & Canada", // Part of USA
   "Albania": "Europe",
   "Algeria": "Northern Africa",
   "American Samoa": "Oceania",
@@ -52,7 +52,7 @@ var countries = {
   "Burundi": "Central & Southern Africa",
   "Cambodia": "South Asia",
   "Cameroon": "Central & Southern Africa",
-  "Canada": "Mainland U.S., Alaska & Canada",
+  "Canada": "Mainland U.S.: Alaska & Canada",
   "Canary Islands": "Northern Africa", // Part of Spain
   "Cape Verde": "Central & Southern Africa",
   "Cayman Islands": "Caribbean",
@@ -131,7 +131,7 @@ var countries = {
   "Macau": "South Asia",
   "Macedonia": "Europe",
   "Madagascar": "Central & Southern Africa",
-  "United States": "Mainland U.S., Alaska & Canada",
+  "United States": "Mainland U.S.: Alaska & Canada",
   "Malawi": "Central & Southern Africa",
   "Malaysia": "South Asia",
   "Maldives": "Central Asia",
@@ -261,13 +261,79 @@ var costs = {
       "Economy": 30,
       "Business": 60,
       "First": 80,
+    },
+    "Europe": {
+      "Economy": 30,
+      "Business": 70,
+      "First": 110,
+    },
+    "Northern Africa": {
+      "Economy": 40,
+      "Business": 80,
+      "First": 130,
+    },
+    "Central & Southern Africa": {
+      "Economy": 40,
+      "Business": 80,
+      "First": 130,
+    },
+    "Middle East": {
+      "Economy": 42.5,
+      "Business": 85,
+      "First": 140,
+    },
+    "Central Asia": {
+      "Economy": 42.5,
+      "Business": 85,
+      "First": 140,
+    },
+    "South Asia": {
+      "Economy": 40,
+      "Business": 90,
+      "First": 140,
+    },
+    "North Asia": {
+      "Economy": 35,
+      "Business": 80,
+      "First": 120,
+    },
+    "Japan": {
+      "Economy": 35,
+      "Business": 80,
+      "First": 110,
+    },
+    "Oceania": {
+      "Economy": 35,
+      "Business": 80,
+      "First": 110,
+    },
+    "Australia & New Zealand": {
+      "Economy": 40,
+      "Business": 90,
+      "First": 130,
     }
-
   }
 }
 
 
-export function mileageCost(countryA, countryB, distance) {
+module.exports = {
+  mileageCost: function(countryA, countryB, distance) {
+    var reg1 = regions[countryA];
+    var reg2 = regions[countryB];
 
+    var regId1 = regionIds[reg1];
+    var regId2 = regionIds[reg2];
 
+    if (regId1 === regId2 && distance < 800 && reg1 !== "Japan") {
+      return 8;
+    }
+
+    if (regId1 > regId2) {
+      var reg3 = reg2;
+      reg2 = reg1;
+      reg1 = reg3;
+    }
+
+    return costs[reg1][reg2].Economy;
+  }
 };

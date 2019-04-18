@@ -5,6 +5,8 @@ const morgan = require('morgan');
 const fs = require('fs');
 const haversine = require('haversine');
 
+const united = require('./award/united.js');
+
 const rapidKeyPath = '/var/flights/key';
 const host = '0.0.0.0';
 const port = 8080;
@@ -42,8 +44,24 @@ function finalizedLoadingFunction(callbackRes, result) {
       Link: itinerary.PricingOptions[0].DeeplinkUrl,
       Price: itinerary.PricingOptions[0].Price,
       Flights: [],
+      Mileages: [],
     }
+
     var itlegs = legs[itinerary.OutboundLegId];
+
+    var firstAirport = places[itlegs.OriginStation];
+    var firstAirportInfo = airportData[firstAirport.Code];
+    var lastAirport = places[itlegs.DestinationStation];
+    var lastAirportInfo = airportData[lastAirport.Code];
+
+    var mileage = united.mileageCost(firstAirportInfo.Country,
+                                     lastAirportInfo.Country,
+                                     airportsDistance);
+    newIt.Mileages.push({
+      Carrier: 'UA',
+      Cost: mileage,
+    });
+
     for (var segid in itlegs.SegmentIds) {
       var segment = segments[itlegs.SegmentIds[segid]];
 
@@ -124,7 +142,9 @@ var app = express();
 app.use(morgan('combined'));
 app.use(express.static(__dirname + '/web'));
 
-app.get('/test', (req, res) => res.sendFile(__dirname + '/test/sample.js'))
+app.get('/test', (req, res) => {
+  res.sendFile(__dirname + '/test/sample.js')
+})
 
 app.get('/:dep/:arr/:date', (req, res) => {
   unirest.post('https://skyscanner-skyscanner-flight-search-v1.p.rapidapi.com/apiservices/pricing/v1.0')
@@ -142,14 +162,13 @@ app.get('/:dep/:arr/:date', (req, res) => {
     var loc = arglist[arglist.length-1];
     console.log('Id: ' + loc);
 
-    // keepTrying(res, loc);
+    keepTrying(res, loc);
   });
 });
 
 app.listen(port);
 
 console.log('Started Server...')
-
 
 /// Places:
 // { Id: 14074,
