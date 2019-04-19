@@ -19,7 +19,7 @@ function reveal() {
   loading.innerHTML = '<p>Loading...</p>';
   document.getElementById('content').appendChild(loading);
 
-  fetch('http://52.91.80.138/' + dep + '/' + arr + '/' + outbound)
+  fetch('http://localhost:8080/' + dep + '/' + arr + '/' + outbound)
   .then((resp) => resp.json())
   .then((data) => {
     var div = document.createElement('div');
@@ -28,7 +28,14 @@ function reveal() {
     div.innerHTML = '';
 
     for (var itid in data) {
-      div.innerHTML += '<a href=' + data[itid].Link + '>Flight option #' + 0 + ' ($' + data[itid].Price + ')</a>. Costs ' + data[itid].Mileages[0].Cost + 'k ' + data[itid].Mileages[0].Carrier + ' miles. <br />';
+      div.innerHTML += '<a href=' + data[itid].Link + '>Flight option #' + itid + ' ($' + data[itid].Price + ')</a>. ';
+      if (data[itid].Flights.length === 1) {
+        div.innerHTML += '<b>NONSTOP!</b> ';
+      }
+      if (data[itid].Mileages.length > 0) {
+        div.innerHTML += ' Costs ' + data[itid].Mileages[0].Cost + 'k ' + data[itid].Mileages[0].Carrier + ' miles.';
+      }
+      div.innerHTML += '<br />';
       for (var flid in data[itid].Flights) {
         var flight = data[itid].Flights[flid];
         div.innerHTML +=

@@ -8,7 +8,6 @@ const haversine = require('haversine');
 const united = require('./award/united.js');
 
 const rapidKeyPath = '/var/flights/key';
-const host = '0.0.0.0';
 const port = 8080;
 
 console.log('Reading RapidApi Key...');
@@ -18,6 +17,32 @@ console.log('Reading Airport Data...');
 const airportDataBlob = fs.readFileSync('airports.csv', 'utf8').trim();
 var airportDataLined = airportDataBlob.split(/\r?\n/);
 var airportData = {};
+
+for (var lineId in airportDataLined) {
+  const airportDataLine = airportDataLined[lineId];
+  var airportDataItems = airportDataLine.split(',');
+
+  // We don't need airports without IATA, we rarely can buy tickets for those.
+  if (airportDataItems[4] !== '\\N') {
+    const iata = airportDataItems[4].replace(/"/g, '');
+    airportData[iata] = {
+      'Id'       : airportDataItems[0].replace(/"/g, ''),
+      'Name'     : airportDataItems[1].replace(/"/g, ''),
+      'City'     : airportDataItems[2].replace(/"/g, ''),
+      'Country'  : airportDataItems[3].replace(/"/g, ''),
+      'IATA'     : airportDataItems[4].replace(/"/g, ''),
+      'ICAO'     : airportDataItems[5].replace(/"/g, ''),
+      'Latitude' : airportDataItems[6].replace(/"/g, ''),
+      'Longitude': airportDataItems[7].replace(/"/g, ''),
+      'Altitude' : airportDataItems[8].replace(/"/g, ''),
+      'Timezone' : airportDataItems[9].replace(/"/g, ''),
+      'DST'      : airportDataItems[10].replace(/"/g, ''),
+      'Tz'       : airportDataItems[11].replace(/"/g, ''),
+      'Type'     : airportDataItems[12].replace(/"/g, ''),
+      'Source'   : airportDataItems[13].replace(/"/g, ''),
+    };
+  }
+}
 
 function sleep(ms) {
   return new Promise(resolve => setTimeout(resolve, ms));
@@ -54,14 +79,6 @@ function finalizedLoadingFunction(callbackRes, result) {
     var lastAirport = places[itlegs.DestinationStation];
     var lastAirportInfo = airportData[lastAirport.Code];
 
-    var mileage = united.mileageCost(firstAirportInfo.Country,
-                                     lastAirportInfo.Country,
-                                     airportsDistance);
-    newIt.Mileages.push({
-      Carrier: 'UA',
-      Cost: mileage,
-    });
-
     for (var segid in itlegs.SegmentIds) {
       var segment = segments[itlegs.SegmentIds[segid]];
 
@@ -87,6 +104,12 @@ function finalizedLoadingFunction(callbackRes, result) {
         Distance: airportsDistance,
       });
     }
+
+    var unitedMileage = united.mileageCost(newIt.Flights, airportData)
+    if (Object.entries(unitedMileage).length !== 0) {
+      newIt.Mileages.push(unitedMileage);
+    }
+
     simplifiedIts.push(newIt);
   }
 
@@ -109,32 +132,6 @@ function keepTrying(callbackRes, loc) {
         finalizedLoadingFunction(callbackRes, res);
       }
     });
-}
-
-for (var lineId in airportDataLined) {
-  const airportDataLine = airportDataLined[lineId];
-  var airportDataItems = airportDataLine.split(',');
-
-  // We don't need airports without IATA, we rarely can buy tickets for those.
-  if (airportDataItems[4] !== '\\N') {
-    const iata = airportDataItems[4].replace(/"/g, '');
-    airportData[iata] = {
-      'Id'       : airportDataItems[0].replace(/"/g, ''),
-      'Name'     : airportDataItems[1].replace(/"/g, ''),
-      'City'     : airportDataItems[2].replace(/"/g, ''),
-      'Country'  : airportDataItems[3].replace(/"/g, ''),
-      'IATA'     : airportDataItems[4].replace(/"/g, ''),
-      'ICAO'     : airportDataItems[5].replace(/"/g, ''),
-      'Latitude' : airportDataItems[6].replace(/"/g, ''),
-      'Longitude': airportDataItems[7].replace(/"/g, ''),
-      'Altitude' : airportDataItems[8].replace(/"/g, ''),
-      'Timezone' : airportDataItems[9].replace(/"/g, ''),
-      'DST'      : airportDataItems[10].replace(/"/g, ''),
-      'Tz'       : airportDataItems[11].replace(/"/g, ''),
-      'Type'     : airportDataItems[12].replace(/"/g, ''),
-      'Source'   : airportDataItems[13].replace(/"/g, ''),
-    };
-  }
 }
 
 var app = express();

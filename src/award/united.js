@@ -1,3 +1,5 @@
+const fs = require('fs');
+
 var regionIds = {
   "Mainland U.S.: Alaska & Canada": 0,
   "Hawaii": 1,
@@ -131,7 +133,6 @@ var regions = {
   "Macau": "South Asia",
   "Macedonia": "Europe",
   "Madagascar": "Central & Southern Africa",
-  "United States": "Mainland U.S.: Alaska & Canada",
   "Malawi": "Central & Southern Africa",
   "Malaysia": "South Asia",
   "Maldives": "Central Asia",
@@ -214,6 +215,7 @@ var regions = {
   "Ukraine": "Europe",
   "United Arab Emirates": "Middle East",
   "United Kingdom": "Europe",
+  "United States": "Mainland U.S.: Alaska & Canada",
   "Uruguay": "Southern South America",
   "Uzbekistan": "Central Asia",
   "Vanuatu": "Oceania",
@@ -225,115 +227,117 @@ var regions = {
   "Zimbabwe": "Central & Southern Africa",
 };
 
-var costs = {
-  "Mainland U.S.: Alaska & Canada": {
-    "Mainland U.S.: Alaska & Canada": {
-      "Economy": 12.5,
-      "Business": 25,
-      "First": 35,
-    },
-    "Hawaii": {
-      "Economy": 22.5,
-      "Business": 40,
-      "First": 50,
-    },
-    "Mexico": {
-      "Economy": 17.5,
-      "Business": 30,
-      "First": 40,
-    },
-    "Central America": {
-      "Economy": 17.5,
-      "Business": 30,
-      "First": 40,
-    },
-    "Caribbean": {
-      "Economy": 17.5,
-      "Business": 30,
-      "First": 40,
-    },
-    "Northern South America": {
-      "Economy": 20,
-      "Business": 35,
-      "First": 45,
-    },
-    "Southern South America": {
-      "Economy": 30,
-      "Business": 60,
-      "First": 80,
-    },
-    "Europe": {
-      "Economy": 30,
-      "Business": 70,
-      "First": 110,
-    },
-    "Northern Africa": {
-      "Economy": 40,
-      "Business": 80,
-      "First": 130,
-    },
-    "Central & Southern Africa": {
-      "Economy": 40,
-      "Business": 80,
-      "First": 130,
-    },
-    "Middle East": {
-      "Economy": 42.5,
-      "Business": 85,
-      "First": 140,
-    },
-    "Central Asia": {
-      "Economy": 42.5,
-      "Business": 85,
-      "First": 140,
-    },
-    "South Asia": {
-      "Economy": 40,
-      "Business": 90,
-      "First": 140,
-    },
-    "North Asia": {
-      "Economy": 35,
-      "Business": 80,
-      "First": 120,
-    },
-    "Japan": {
-      "Economy": 35,
-      "Business": 80,
-      "First": 110,
-    },
-    "Oceania": {
-      "Economy": 35,
-      "Business": 80,
-      "First": 110,
-    },
-    "Australia & New Zealand": {
-      "Economy": 40,
-      "Business": 90,
-      "First": 130,
+var alaskaAirports = [
+  "MRI", "ANC", "ANI", "BRW", "BET",
+  "CDV", "SCC", "DLG", "FAI", "GAL",
+  "HOM", "JNU", "ENA", "KTN", "AKN",
+  "ADQ", "OTZ", "OME", "PSG", "SIT",
+  "KSM", "UNK", "DUT", "VDZ", "WRG",
+  "YAK", "AUK", "AKP", "BKC", "CYF",
+  "VAK", "CDB", "CXF", "CGA", "EEK",
+  "EMK", "FYU", "GAM", "GST", "HNS",
+  "HNH", "HPB", "HSL", "ILI", "BTI",
+  "KLG", "KUK", "IAN", "KPN", "KVL",
+  "KVL", "KLW", "KKH", "KOT", "KWT",
+  "KWK", "KLN", "KMO", "MLL", "MCG",
+  "MTM", "MOU", "WWT", "WTK", "ORV",
+  "NUP", "OLH", "PQS", "PHO", "KWN",
+  "RSH", "SNP", "SDP", "SVA", "SCM",
+  "WLK", "SOV", "SHH", "SGY", "TAL",
+  "KTB", "OOK", "TLT", "WTL", "AIN"
+];
+
+var hawaiiAirports = [
+  "ITO", "HNL", "OGG", "KOA", "MKK",
+  "LNY", "LIH", "HNM", "LUP", "MUE",
+  "JHM", "PAK", "UPP", "HDH", "HIK",
+  "BKH", "BSF", "HHI", "HPV"
+];
+
+var unitedPartnerCodes = [
+  "JP", "OZ", "MS", "ZH", "TG", "A3",
+  "OS", "ET", "SQ", "TK", "AC", "AV",
+  "BR", "SA", "UA", "CA", "SN", "LO",
+  "LX", "NZ", "CM", "LH", "NH", "OU",
+  "SK", "TP", "EI", "VW", "EN", "4B",
+  "9K", "WK", "EW", "HA", "OA", "3M",
+  "UA"
+];
+
+function loadCosts(filename, saveVar) {
+  const saveVarBlob = fs.readFileSync(filename, 'utf8').trim();
+  var saveVarLined = saveVarBlob.split(/\r?\n/);
+  for (var lineId in saveVarLined) {
+    saveVar[lineId] = {};
+
+    const saveVarLine = saveVarLined[lineId];
+    var saveVarItems = saveVarLine.split(',');
+
+    for (var itemId in saveVarItems) {
+      saveVar[lineId][itemId] = saveVarItems[itemId];
     }
   }
 }
 
+var unitedEconomyCosts = {};
+loadCosts('src/award/united-economy.csv', unitedEconomyCosts);
+var partnerEconomyCosts = {};
+loadCosts('src/award/united-partners-economy.csv', partnerEconomyCosts);
 
 module.exports = {
-  mileageCost: function(countryA, countryB, distance) {
-    var reg1 = regions[countryA];
-    var reg2 = regions[countryB];
-
-    var regId1 = regionIds[reg1];
-    var regId2 = regionIds[reg2];
-
-    if (regId1 === regId2 && distance < 800 && reg1 !== "Japan") {
-      return 8;
+  mileageCost: function(flights, airportData) {
+    var allUAflights = flights.reduce((acc, curr) => acc && (curr.Carrier == 'UA'), true);
+    var eligibleRoute = flights.reduce((acc, curr) => acc && (unitedPartnerCodes.includes(curr.Carrier)), true);
+    if (eligibleRoute !== true) {
+      return {};
     }
 
-    if (regId1 > regId2) {
-      var reg3 = reg2;
-      reg2 = reg1;
-      reg1 = reg3;
+    var firstAirport = flights[0].From;
+    var lastAirport = flights[flights.length-1].To;
+
+    var country1 = airportData[firstAirport].Country;
+    var country2 = airportData[lastAirport].Country;
+
+    var regId1, regId2;
+    if (hawaiiAirports.includes(firstAirport)) {
+      regId1 = regionIds["Hawaii"];
+    } else {
+      regId1 = regionIds[regions[country1]];
     }
 
-    return costs[reg1][reg2].Economy;
+    if (hawaiiAirports.includes(lastAirport)) {
+      regId2 = regionIds["Hawaii"];
+    } else {
+      regId2 = regionIds[regions[country2]];
+    }
+
+    var totalDistance = flights.reduce((acc, curr) => (parseInt(acc,10) + parseInt(curr.Distance)), 0)
+
+    // Intra Mainland US flights.
+    if (regId1 === regId2 &&
+        regId1 === 0) {
+      // Extra 5k for flights to/from Alaska.
+      var toAlaska = ((alaskaAirports.includes(firstAirport) ? 1 : 0) +
+                      (alaskaAirports.includes(lastAirport) ? 1 : 0))
+                     == 1 ? 5 : 0;
+
+      if (totalDistance < 700 && allUAflights) {
+        return {Carrier: 'UA', Cost: 10 + toAlaska};
+      }
+      return {Carrier: 'UA', Cost: 12.5 + toAlaska};
+    }
+
+    if (flights.length === 1 &&
+        flights[0].Distance < 800 &&
+        regId1 === regId2 &&
+        regId1 !== 0 &&
+        regId1 !== 14) {
+      return {Carrier: 'UA', Cost: 8};
+    }
+
+    if (allUAflights === true) {
+      return {Carrier: 'UA', Cost: unitedEconomyCosts[regId1][regId2]};
+    }
+    return {Carrier: 'UA', Cost: partnerEconomyCosts[regId1][regId2]};
   }
 };
