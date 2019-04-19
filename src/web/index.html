@@ -9,19 +9,19 @@
     <div class="row" style="width:100%;margin:0px auto;text-align:left;padding:5px;border:1px;background-color:#eee">
       <div class="column" style="text-align:center;width:200px;height:50px;border:1px solid #000000;padding:5px;margin:5px;display:inline-block">
         <label>Departure City</label>
-        <input id="departure" type="text" style="text-align:center" value="rdu">
+        <input id="departure" type="text" style="text-align:center" maxlength="3" value="rdu">
       </div>
       <div class="column" style="text-align:center;width:200px;height:50px;border:1px solid #000000;padding:5px;margin:5px;display:inline-block">
         <label>Arrival City</label>
-        <input id="arrival" type="text" style="text-align:center" value="jfk">
+        <input id="arrival" type="text" style="text-align:center" maxlength="3" value="jfk">
       </div>
       <div class="column" style="text-align:center;width:200px;height:50px;border:1px solid #000000;padding:5px;margin:5px;display:inline-block">
         <label>Outbound Date</label>
-        <input id="outbound" type="text" style="text-align:center" value="2019-10-06">
+        <input id="outbound" type="date" style="text-align:center" value="2019-10-06">
       </div>
       <div class="column" style="text-align:center;width:200px;height:50px;border:1px solid #000000;padding:5px;margin:5px;display:inline-block">
         <label>Return Date</label>
-        <input id="inbound" type="text" style="text-align:center" value="2019-10-10">
+        <input id="inbound" type="date" style="text-align:center" value="2019-10-10">
       </div>
       <button type="button" style="magin-left:300;display:block;margin-left:auto;margin-right:auto" onclick="reveal()" >Search</button>
     </div>

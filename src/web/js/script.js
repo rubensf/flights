@@ -19,7 +19,7 @@ function reveal() {
   loading.innerHTML = '<p>Loading...</p>';
   document.getElementById('content').appendChild(loading);
 
-  fetch('http://localhost:8080/' + dep + '/' + arr + '/' + outbound)
+  fetch('http://52.91.80.138/' + dep + '/' + arr + '/' + outbound)
   .then((resp) => resp.json())
   .then((data) => {
     var div = document.createElement('div');
@@ -36,16 +36,20 @@ function reveal() {
         div.innerHTML += ' Costs ' + data[itid].Mileages[0].Cost + 'k ' + data[itid].Mileages[0].Carrier + ' miles.';
       }
       div.innerHTML += '<br />';
+
+      div.innerHTML += '<div id="flight' + itid + '"';
       for (var flid in data[itid].Flights) {
         var flight = data[itid].Flights[flid];
         div.innerHTML +=
-          'Flight ' + flight.Carrier + flight.Number +
+          '<img src="' + flight.Image + '" style="vertical-align:middle"> ' +
+          flight.Carrier + flight.Number +
           ' From ' + flight.From +
           ' To ' + flight.To +
           ' Departs At ' + flight.Departs +
           ' Arrives At ' + flight.Arrives +
           ' Distance ' + flight.Distance + ' miles ' +
           '<br />';
+        div.innerHTML += '</div>';
       }
     }
 
