@@ -354,6 +354,6 @@ module.exports = {
       return {};
     }
 
-    return {Carrier: 'UA', Cost: oneWayCost + returnCost};
+    return {Carrier: 'UA', Cost: parseFloat(oneWayCost) + parseFloat(returnCost)};
   }
 };
