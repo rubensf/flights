@@ -134,6 +134,26 @@ function keepTrying(callbackRes, loc) {
     });
 }
 
+function baseReq(dep, arr, outbound) {
+  return req = unirest.post('https://skyscanner-skyscanner-flight-search-v1.p.rapidapi.com/apiservices/pricing/v1.0')
+  .header('X-RapidAPI-Key', key)
+  .header('Content-Type', 'application/x-www-form-urlencoded')
+  .send('country=US')
+  .send('currency=USD')
+  .send('locale=en-US')
+  .send('originPlace='     +dep+'-sky')
+  .send('destinationPlace='+arr+'-sky')
+  .send('outboundDate='    +outbound)
+  .send('adults=1');
+}
+
+function getLoc(loc) {
+  var arglist = loc.split('/')
+  var loc = arglist[arglist.length-1];
+  console.log('Id: ' + loc);
+  return loc;
+}
+
 var app = express();
 
 app.use(morgan('combined'));
@@ -144,22 +164,22 @@ app.get('/test', (req, res) => {
 })
 
 app.get('/:dep/:arr/:date', (req, res) => {
-  unirest.post('https://skyscanner-skyscanner-flight-search-v1.p.rapidapi.com/apiservices/pricing/v1.0')
-  .header('X-RapidAPI-Key', key)
-  .header('Content-Type', 'application/x-www-form-urlencoded')
-  .send('country=US')
-  .send('currency=USD')
-  .send('locale=en-US')
-  .send('originPlace='     +req.params['dep']+'-sky')
-  .send('destinationPlace='+req.params['arr']+'-sky')
-  .send('outboundDate='    +req.params['date'])
-  .send('adults=1')
-  .end(function (result) {
-    var arglist = result.headers['location'].split('/')
-    var loc = arglist[arglist.length-1];
-    console.log('Id: ' + loc);
+  baseReq(req.params['dep'],
+          req.params['arr'],
+          req.params['date'])
+    .end(function (result) {
+    keepTrying(res, getLoc(result.headers['location']));
+  });
+});
 
-    keepTrying(res, loc);
+app.get('/:dep/:arr/:date/:back', (req, res) => {
+  console.log('back');
+  baseReq(req.params['dep'],
+          req.params['arr'],
+          req.params['date'])
+    .send('inboundDate='+req.params['back'])
+    .end(function (result) {
+    keepTrying(res, getLoc(result.headers['location']));
   });
 });
 

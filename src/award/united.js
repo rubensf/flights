@@ -22,11 +22,12 @@ var regionIds = {
 
 var regions = {
   "Afghanistan": "Central Asia",
-  "Alaska": "Mainland U.S.: Alaska & Canada", // Part of USA
+  "Alaska": "Mainland U.S.: Alaska & Canada",
   "Albania": "Europe",
   "Algeria": "Northern Africa",
   "American Samoa": "Oceania",
   "Angola": "Central & Southern Africa",
+  "Anguilla": "Caribbean",
   "Antigua and Barbuda": "Caribbean",
   "Argentina": "Southern South America",
   "Armenia": "Europe",
@@ -75,6 +76,7 @@ var regions = {
   "Congo (Kinshasa)": "Central & Southern Africa",
   "Denmark": "Europe",
   "Djibouti": "Central & Southern Africa",
+  "Dominica": "Caribbean",
   "Dominican Republic": "Caribbean",
   "Ecuador": "Northern South America",
   "Egypt": "Middle East",

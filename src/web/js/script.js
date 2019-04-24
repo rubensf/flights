@@ -4,6 +4,8 @@ function reveal() {
   var outbound = document.getElementById("outbound").value;
   var inbound = document.getElementById("inbound").value;
 
+  var oneway = document.getElementById("oneway").checked;
+
   var lddiv = document.getElementById('loading');
   if (lddiv !== undefined && lddiv !== null) {
     lddiv.parentNode.removeChild(lddiv);
@@ -19,7 +21,7 @@ function reveal() {
   loading.innerHTML = '<p>Loading...</p>';
   document.getElementById('content').appendChild(loading);
 
-  fetch('http://52.91.80.138/' + dep + '/' + arr + '/' + outbound)
+  fetch('http://localhost:8080/' + dep + '/' + arr + '/' + outbound + (oneway ? '' : ('/' + inbound)))
   .then((resp) => resp.json())
   .then((data) => {
     var div = document.createElement('div');

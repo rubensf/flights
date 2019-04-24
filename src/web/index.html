@@ -7,23 +7,28 @@
 
   <body>
     <div class="row" style="width:100%;margin:0px auto;text-align:left;padding:5px;border:1px;background-color:#eee">
-      <div class="column" style="text-align:center;width:200px;height:50px;border:1px solid #000000;padding:5px;margin:5px;display:inline-block">
+      <div class="column" style="text-align:center;width:22%;height:50px;border:1px solid #000000;padding:5px;margin:5px;display:inline-block">
         <label>Departure City</label>
         <input id="departure" type="text" style="text-align:center" maxlength="3" value="rdu">
       </div>
-      <div class="column" style="text-align:center;width:200px;height:50px;border:1px solid #000000;padding:5px;margin:5px;display:inline-block">
+      <div class="column" style="text-align:center;width:22%;height:50px;border:1px solid #000000;padding:5px;margin:5px;display:inline-block">
         <label>Arrival City</label>
         <input id="arrival" type="text" style="text-align:center" maxlength="3" value="jfk">
       </div>
-      <div class="column" style="text-align:center;width:200px;height:50px;border:1px solid #000000;padding:5px;margin:5px;display:inline-block">
+      <div class="column" style="text-align:center;width:22%;height:50px;border:1px solid #000000;padding:5px;margin:5px;display:inline-block">
         <label>Outbound Date</label>
         <input id="outbound" type="date" style="text-align:center" value="2019-10-06">
       </div>
-      <div class="column" style="text-align:center;width:200px;height:50px;border:1px solid #000000;padding:5px;margin:5px;display:inline-block">
+      <div class="column" style="text-align:center;width:22%;height:50px;border:1px solid #000000;padding:5px;margin:5px;display:inline-block">
         <label>Return Date</label>
         <input id="inbound" type="date" style="text-align:center" value="2019-10-10">
       </div>
-      <button type="button" style="magin-left:300;display:block;margin-left:auto;margin-right:auto" onclick="reveal()" >Search</button>
+      <div class="item" style="margin-left:45%;width:10%;text-align:center">
+        <input id="oneway" type="checkbox">
+        <label for="oneway">One way</label>
+        <br>
+        <button  onclick="reveal()" >Search</button>
+      </div>
     </div>
 
     <div id="content">
