@@ -286,60 +286,74 @@ loadCosts('src/award/united-economy.csv', unitedEconomyCosts);
 var partnerEconomyCosts = {};
 loadCosts('src/award/united-partners-economy.csv', partnerEconomyCosts);
 
+function singleWayCost(flights, airportData) {
+  var allUAflights = flights.reduce((acc, curr) => acc && (curr.Carrier == 'UA'), true);
+  var eligibleRoute = flights.reduce((acc, curr) => acc && (unitedPartnerCodes.includes(curr.Carrier)), true);
+  if (eligibleRoute !== true) {
+    return -1;
+  }
+
+  var firstAirport = flights[0].From;
+  var lastAirport = flights[flights.length-1].To;
+
+  var country1 = airportData[firstAirport].Country;
+  var country2 = airportData[lastAirport].Country;
+
+  var regId1, regId2;
+  if (hawaiiAirports.includes(firstAirport)) {
+    regId1 = regionIds["Hawaii"];
+  } else {
+    regId1 = regionIds[regions[country1]];
+  }
+
+  if (hawaiiAirports.includes(lastAirport)) {
+    regId2 = regionIds["Hawaii"];
+  } else {
+    regId2 = regionIds[regions[country2]];
+  }
+
+  var totalDistance = flights.reduce((acc, curr) => (parseInt(acc,10) + parseInt(curr.Distance)), 0)
+
+  // Intra Mainland US flights.
+  if (regId1 === regId2 &&
+      regId1 === 0) {
+    // Extra 5k for flights to/from Alaska.
+    var toAlaska = ((alaskaAirports.includes(firstAirport) ? 1 : 0) +
+                    (alaskaAirports.includes(lastAirport) ? 1 : 0))
+                   == 1 ? 5 : 0;
+
+    if (totalDistance < 700 && allUAflights) {
+      return 10 + toAlaska;
+    }
+    return 12.5 + toAlaska;
+  }
+
+  if (flights.length === 1 &&
+      flights[0].Distance < 800 &&
+      regId1 === regId2 &&
+      regId1 !== 0 &&
+      regId1 !== 14) {
+    return 8;
+  }
+
+  if (allUAflights === true) {
+    return unitedEconomyCosts[regId1][regId2];
+  }
+  return partnerEconomyCosts[regId1][regId2];
+}
+
 module.exports = {
   mileageCost: function(flights, airportData) {
-    var allUAflights = flights.reduce((acc, curr) => acc && (curr.Carrier == 'UA'), true);
-    var eligibleRoute = flights.reduce((acc, curr) => acc && (unitedPartnerCodes.includes(curr.Carrier)), true);
-    if (eligibleRoute !== true) {
+    var oneWayCost = singleWayCost(flights.Outbound, airportData);
+    var returnCost = 0;
+    if (flights.Inbound !== {}) {
+      var returnCost = singleWayCost(flights.Inbound, airportData);
+    }
+
+    if (oneWayCost === -1 || returnCost === -1) {
       return {};
     }
 
-    var firstAirport = flights[0].From;
-    var lastAirport = flights[flights.length-1].To;
-
-    var country1 = airportData[firstAirport].Country;
-    var country2 = airportData[lastAirport].Country;
-
-    var regId1, regId2;
-    if (hawaiiAirports.includes(firstAirport)) {
-      regId1 = regionIds["Hawaii"];
-    } else {
-      regId1 = regionIds[regions[country1]];
-    }
-
-    if (hawaiiAirports.includes(lastAirport)) {
-      regId2 = regionIds["Hawaii"];
-    } else {
-      regId2 = regionIds[regions[country2]];
-    }
-
-    var totalDistance = flights.reduce((acc, curr) => (parseInt(acc,10) + parseInt(curr.Distance)), 0)
-
-    // Intra Mainland US flights.
-    if (regId1 === regId2 &&
-        regId1 === 0) {
-      // Extra 5k for flights to/from Alaska.
-      var toAlaska = ((alaskaAirports.includes(firstAirport) ? 1 : 0) +
-                      (alaskaAirports.includes(lastAirport) ? 1 : 0))
-                     == 1 ? 5 : 0;
-
-      if (totalDistance < 700 && allUAflights) {
-        return {Carrier: 'UA', Cost: 10 + toAlaska};
-      }
-      return {Carrier: 'UA', Cost: 12.5 + toAlaska};
-    }
-
-    if (flights.length === 1 &&
-        flights[0].Distance < 800 &&
-        regId1 === regId2 &&
-        regId1 !== 0 &&
-        regId1 !== 14) {
-      return {Carrier: 'UA', Cost: 8};
-    }
-
-    if (allUAflights === true) {
-      return {Carrier: 'UA', Cost: unitedEconomyCosts[regId1][regId2]};
-    }
-    return {Carrier: 'UA', Cost: partnerEconomyCosts[regId1][regId2]};
+    return {Carrier: 'UA', Cost: oneWayCost + returnCost};
   }
 };

@@ -48,6 +48,42 @@ function sleep(ms) {
   return new Promise(resolve => setTimeout(resolve, ms));
 }
 
+function grepFlights(places, airportData, carriers, segments, itlegs) {
+  var firstAirport = places[itlegs.OriginStation];
+  var firstAirportInfo = airportData[firstAirport.Code];
+  var lastAirport = places[itlegs.DestinationStation];
+  var lastAirportInfo = airportData[lastAirport.Code];
+
+  var returnFlights = [];
+  for (var segid in itlegs.SegmentIds) {
+    var segment = segments[itlegs.SegmentIds[segid]];
+
+    var carrier = carriers[segment.Carrier];
+    var depAirport = places[segment.OriginStation];
+    var destAirport = places[segment.DestinationStation];
+
+    var depAirportInfo = airportData[depAirport.Code];
+    var destAirportInfo = airportData[destAirport.Code];
+
+    var airportsDistance = haversine([depAirportInfo.Latitude, depAirportInfo.Longitude],
+      [destAirportInfo.Latitude, destAirportInfo.Longitude],
+      {unit: 'mile', format: '[lat,lon]'}).toFixed(2);
+
+    returnFlights.push({
+      Carrier: carrier.Code,
+      Image: carrier.ImageUrl,
+      Number: segment.FlightNumber,
+      From: depAirport.Code,
+      To: destAirport.Code,
+      Departs: segment.DepartureDateTime,
+      Arrives: segment.ArrivalDateTime,
+      Distance: airportsDistance,
+    });
+  }
+
+  return returnFlights;
+}
+
 function finalizedLoadingFunction(callbackRes, result) {
   var idMapper = (map, obj) => {
     map[obj.Id] = obj;
@@ -66,43 +102,25 @@ function finalizedLoadingFunction(callbackRes, result) {
   for (var itid in itineraries) {
     var itinerary = itineraries[itid];
     var newIt = {
-      Link: itinerary.PricingOptions[0].DeeplinkUrl,
+      PurchaseLink: itinerary.PricingOptions[0].DeeplinkUrl,
       Price: itinerary.PricingOptions[0].Price,
-      Flights: [],
+      Flights: {},
       Mileages: [],
     }
 
-    var itlegs = legs[itinerary.OutboundLegId];
+    newIt.Flights.Outbound = grepFlights(places,
+                                         airportData,
+                                         carriers,
+                                         segments,
+                                         legs[itinerary.OutboundLegId]);
 
-    var firstAirport = places[itlegs.OriginStation];
-    var firstAirportInfo = airportData[firstAirport.Code];
-    var lastAirport = places[itlegs.DestinationStation];
-    var lastAirportInfo = airportData[lastAirport.Code];
-
-    for (var segid in itlegs.SegmentIds) {
-      var segment = segments[itlegs.SegmentIds[segid]];
-
-      var carrier = carriers[segment.Carrier];
-      var depAirport = places[segment.OriginStation];
-      var destAirport = places[segment.DestinationStation];
-
-      var depAirportInfo = airportData[depAirport.Code];
-      var destAirportInfo = airportData[destAirport.Code];
-
-      var airportsDistance = haversine([depAirportInfo.Latitude, depAirportInfo.Longitude],
-        [destAirportInfo.Latitude, destAirportInfo.Longitude],
-        {unit: 'mile', format: '[lat,lon]'}).toFixed(2);
-
-      newIt.Flights.push({
-        Carrier: carrier.Code,
-        Image: carrier.ImageUrl,
-        Number: segment.FlightNumber,
-        From: depAirport.Code,
-        To: destAirport.Code,
-        Departs: segment.DepartureDateTime,
-        Arrives: segment.ArrivalDateTime,
-        Distance: airportsDistance,
-      });
+    var isReturn = itinerary.InboundLegId !== '';
+    if (isReturn === true) {
+      newIt.Flights.Inbound = grepFlights(places,
+                                          airportData,
+                                          carriers,
+                                          segments,
+                                          legs[itinerary.InboundLegId]);
     }
 
     var unitedMileage = united.mileageCost(newIt.Flights, airportData)
@@ -173,7 +191,6 @@ app.get('/:dep/:arr/:date', (req, res) => {
 });
 
 app.get('/:dep/:arr/:date/:back', (req, res) => {
-  console.log('back');
   baseReq(req.params['dep'],
           req.params['arr'],
           req.params['date'])
