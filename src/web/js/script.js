@@ -53,7 +53,7 @@ function reveal() {
   loading.innerHTML = '<p>Loading...</p>';
   document.getElementById('content').appendChild(loading);
 
-  fetch('http://localhost:8080/' + dep + '/' + arr + '/' + outbound + (oneway ? '' : ('/' + inbound)))
+  fetch('http://52.91.80.138/' + dep + '/' + arr + '/' + outbound + (oneway ? '' : ('/' + inbound)))
   .then((resp) => resp.json())
   .then((data) => {
 
