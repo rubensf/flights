@@ -72,7 +72,7 @@ function reveal() {
         innerHTML += '<br />';
         innerHTML += 'Outbound: ';
         innerHTML += makeDirection(data[itid].Flights.Outbound, itid);
-        if (data[itid].Flights.Inbound !== {}) {
+        if (data[itid].Flights.Inbound !== undefined) {
           innerHTML += '<br />';
           innerHTML += 'Inbound: ';
           innerHTML += makeDirection(data[itid].Flights.Inbound, itid);

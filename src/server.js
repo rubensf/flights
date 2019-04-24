@@ -114,8 +114,7 @@ function finalizedLoadingFunction(callbackRes, result) {
                                          segments,
                                          legs[itinerary.OutboundLegId]);
 
-    var isReturn = itinerary.InboundLegId !== '';
-    if (isReturn === true) {
+    if (itinerary.InboundLegId !== undefined) {
       newIt.Flights.Inbound = grepFlights(places,
                                           airportData,
                                           carriers,

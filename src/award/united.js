@@ -346,7 +346,7 @@ module.exports = {
   mileageCost: function(flights, airportData) {
     var oneWayCost = singleWayCost(flights.Outbound, airportData);
     var returnCost = 0;
-    if (flights.Inbound !== {}) {
+    if (flights.Inbound !== undefined) {
       var returnCost = singleWayCost(flights.Inbound, airportData);
     }
 
