@@ -263,7 +263,7 @@ var unitedPartnerCodes = [
   "LX", "NZ", "CM", "LH", "NH", "OU",
   "SK", "TP", "EI", "VW", "EN", "4B",
   "9K", "WK", "EW", "HA", "OA", "3M",
-  "UA"
+  "UA", "AD"
 ];
 
 function loadCosts(filename, saveVar) {
